@@ -1,38 +1,41 @@
 package Utils;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.CSVRecord;
+
+import java.io.*;
+
+import org.apache.commons.csv.CSVFormat;
 
 
-	public class Utils {	   
-	   public static void writeAFile(ArrayList<String> lines, String targetFileName) {
-			PrintWriter outputStream = null;
-			
-			try {
-				File file = new File(targetFileName);
-				if (!file.exists()) {
-					file.getParentFile().mkdirs();
-				}
-				outputStream = new PrintWriter(targetFileName);
-			} catch(FileNotFoundException e) {
-				System.out.println(e.getMessage());
-				System.exit(0);
-			}
-			
-			for (String line: lines) {
-	            outputStream.println (line);
-			}
-			
-			outputStream.close();
-		}
+
+
+public class Utils {
+
+   public static void writeAFile(ArrayList<String> lines, String targetFileName) {
+
+
+      try (CSVPrinter printer = new CSVPrinter(new FileWriter(targetFileName), CSVFormat.DEFAULT)) {
+         for(String line:lines) {
+
+
+            String[] a = line.split("///");
+
+            if(a.length < 5) {
+               String aline2 = "///";
+               aline2 +=line;
+               String alines2 [] = aline2.split("///");
+               printer.printRecord(alines2);
+            }
+            else {
+               printer.printRecord(a);
+
+            }
+         }
+      } catch (IOException ex) {
+         ex.printStackTrace();
+      }
+
+   }
 }

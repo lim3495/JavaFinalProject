@@ -1,5 +1,7 @@
 package JavaFinalProject;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -12,50 +14,79 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 
 import Utils.MyException;
-public class ZipReader {
+
+public class ZipReader extends Thread{
 	
 
 	private String dataPath;// csv file to be analyzed
 	private String resultPath; // the file path where the results are saved.
+	private String resultPath2; // the file path where the results are saved.
+	private String errorPath="./error.csv";
 	private boolean help;
-
-	   public void run(String[] args) {
-		   Options options = createOptions();
+	
+	ArrayList<String> saveFile = new ArrayList<String>();
+	private String[] argument;
+	private File[] resultList;
+	
+	   public void run() {
 		try {
-		   if(args.length <2) {
+		   if(argument.length <2) {
 			   throw new MyException();
 		   }
-		}catch (MyException e) {
-			System.out.println(e.getMessage());
-		}
-			
-			if(parseOption(options,args)) {
+		   
+		   Options options = createOptions();
+		   
+			if(parseOption(options,argument)) {
 				if(help) {
 					System.out.println("help");
 					printHelp(options);
 					System.exit(0);
 					
 				}
-	      
-	      readFileInZip(dataPath);
-	      
+		else {
+			getZipFileList(dataPath);
+			
+			for(File f:resultList) {
+				if(f.getName().contains("zip")) {
+					saveFile.add(f.getName());
+					readFileInZip(dataPath + f.getName());
+					}
+				}
+			
+			  Utils.Utils.writeAFile(saveFile, resultPath);
+		   
+			}
+				
+			}
+		}catch (MyException e) {
+			System.out.println(e.getMessage());
+		}
+			    
 	   }
-	   }
+	   
+	   public void setArg(String[] args) {
+			argument = args;
+		}
 
 	   public void readFileInZip(String path) {
 	      ZipFile zipFile;
-	      String resultPath = this.resultPath;	      
-	      
-	      ArrayList<String> temp = new ArrayList<String>();
+	      int count=0;
+	     
 	      
 	      try {
 	         zipFile = new ZipFile(path);
 	         Enumeration<? extends ZipArchiveEntry> entries = zipFile.getEntries();
+	         
+//	         if(zipFile == null)
+//				throw new MyException();
 
 	          while(entries.hasMoreElements()){
-	             ZipArchiveEntry entry = entries.nextElement();
+	        	  
+	              ZipArchiveEntry entry = entries.nextElement();
 	              InputStream stream = zipFile.getInputStream(entry);
 	          
 	              ExcelReader myReader = new ExcelReader();
@@ -63,21 +94,37 @@ public class ZipReader {
 	              
 	              
 	              for(String value:myReader.getData(stream)) {
-	                 temp.add(value);
+	            	  saveFile.add(value);
 	              }
-	              
-
-	              
-	              Utils.Utils.writeAFile(temp, resultPath);
+	         	  saveFile.add("");
+	            //  if(count == 0)
+		         //     Utils.Utils.writeAFile(temp, result);
+	             //  else if(count == 1)
+		          //    Utils.Utils.writeAFile(temp, result2);
+	               
+	              // count ++;
 	          }
 	          
 	          
 	      } catch (IOException e) {
 	         // TODO Auto-generated catch block
 	         e.printStackTrace();
-	      }
+	      } 
 	   }
+	   
+		public File[] getZipFileList(String path) {
+			File file = new File(path);
+			resultList = file.listFiles();
+			
+			return resultList;
+		}
 
+	   private void printError(String path) throws IOException {
+		   try (CSVPrinter printer = new CSVPrinter(new FileWriter(path), CSVFormat.DEFAULT)){
+               printer.printRecord("Error path:"+path);
+               printer.printRecord("\n\n\n");
+		   }
+	   }
 
 		private void printHelp(Options options) {
 			HelpFormatter formatter = new HelpFormatter();
@@ -94,6 +141,7 @@ public class ZipReader {
 				
 				dataPath = cmd.getOptionValue("i");
 				resultPath = cmd.getOptionValue("o");
+				//resultPath2 = cmd.getOptionValue("o2");
 				help = cmd.hasOption("h");
 						
 			} catch(Exception e) {
@@ -121,6 +169,13 @@ public class ZipReader {
 					.argName("Output path")
 					.required()
 					.build());
+			
+//			options.addOption(Option.builder("o2").longOpt("output2")
+//					.desc("Set an output file2 path")
+//					.hasArg()
+//					.argName("Output2 path")
+//					.required()
+//					.build());
 			 
 			options.addOption(Option.builder("h").longOpt("help")
 					.desc("Show a Help page")

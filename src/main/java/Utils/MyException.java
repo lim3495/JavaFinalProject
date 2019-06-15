@@ -3,7 +3,7 @@ package Utils;
 
 public class MyException extends Exception {
 	public MyException () {
-		super("There is CLI error.\n");
+		super("File is not existing.\n");
 	}
 	
 	public MyException (String message) {
