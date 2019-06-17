@@ -28,7 +28,9 @@ public class ZipReader extends Thread{
 	private String errorPath="./error.csv";
 	private boolean help;
 	
-	ArrayList<String> saveFile = new ArrayList<String>();
+	private ArrayList<String> saveFile = new ArrayList<String>();
+	private ArrayList<String> saveFile2 = new ArrayList<String>();
+	private ArrayList<String> saveError = new ArrayList<String>();
 	private String[] argument;
 	private File[] resultList;
 	
@@ -48,16 +50,20 @@ public class ZipReader extends Thread{
 					
 				}
 		else {
-			getZipFileList(dataPath);
+			Files<String> my = new Files();
+			my.set(dataPath);
+			getZipFileList(my.get());
 			
 			for(File f:resultList) {
 				if(f.getName().contains("zip")) {
 					saveFile.add(f.getName());
-					readFileInZip(dataPath + f.getName());
+					saveFile2.add(f.getName());
+					readFileInZip(my.get() + f.getName());
 					}
 				}
 			
 			  Utils.Utils.writeAFile(saveFile, resultPath);
+			  Utils.Utils.writeAFile(saveFile2, resultPath2);
 		   
 			}
 				
@@ -68,11 +74,23 @@ public class ZipReader extends Thread{
 			    
 	   }
 	   
+	   class Files <T>{
+			private T t;
+			
+			public void set(T t) {
+				this.t = t;
+			}
+			
+			public T get() {
+				return t;
+			}
+		}
+	   
 	   public void setArg(String[] args) {
 			argument = args;
 		}
 
-	   public void readFileInZip(String path) {
+	   public void readFileInZip(String path) throws MyException {
 	      ZipFile zipFile;
 	      int count=0;
 	     
@@ -81,8 +99,6 @@ public class ZipReader extends Thread{
 	         zipFile = new ZipFile(path);
 	         Enumeration<? extends ZipArchiveEntry> entries = zipFile.getEntries();
 	         
-//	         if(zipFile == null)
-//				throw new MyException();
 
 	          while(entries.hasMoreElements()){
 	        	  
@@ -93,21 +109,27 @@ public class ZipReader extends Thread{
 	              
 	              
 	              
-	              for(String value:myReader.getData(stream)) {
-	            	  saveFile.add(value);
+	              for(String value:myReader.getData(stream)) {	            
+		              if(count == 0)
+		            	  saveFile.add(value);
+		               else if(count == 1)
+		            	   saveFile2.add(value);
+		              
+		              if(zipFile == null) {
+			   				throw new MyException();
+			   	         }
 	              }
-	         	  saveFile.add("");
-	            //  if(count == 0)
-		         //     Utils.Utils.writeAFile(temp, result);
-	             //  else if(count == 1)
-		          //    Utils.Utils.writeAFile(temp, result2);
+	         	  
+		              saveFile.add("");
+		              saveFile2.add("");
 	               
-	              // count ++;
+	               count ++;
+	               
+	         
 	          }
 	          
 	          
 	      } catch (IOException e) {
-	         // TODO Auto-generated catch block
 	         e.printStackTrace();
 	      } 
 	   }
@@ -141,7 +163,7 @@ public class ZipReader extends Thread{
 				
 				dataPath = cmd.getOptionValue("i");
 				resultPath = cmd.getOptionValue("o");
-				//resultPath2 = cmd.getOptionValue("o2");
+				resultPath2 = cmd.getOptionValue("o2");
 				help = cmd.hasOption("h");
 						
 			} catch(Exception e) {
@@ -170,12 +192,12 @@ public class ZipReader extends Thread{
 					.required()
 					.build());
 			
-//			options.addOption(Option.builder("o2").longOpt("output2")
-//					.desc("Set an output file2 path")
-//					.hasArg()
-//					.argName("Output2 path")
-//					.required()
-//					.build());
+			options.addOption(Option.builder("o2").longOpt("output2")
+					.desc("Set an output file2 path")
+					.hasArg()
+					.argName("Output2 path")
+					.required()
+					.build());
 			 
 			options.addOption(Option.builder("h").longOpt("help")
 					.desc("Show a Help page")
